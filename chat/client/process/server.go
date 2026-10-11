@@ -2,7 +2,9 @@ package process
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"os"
 
@@ -11,6 +13,7 @@ import (
 )
 
 func ShowMenu() {
+	smsProcess := &SmsProcess{}
 	for {
 		fmt.Println("----------恭喜您登录成功---------")
 		fmt.Println("----------1.显示在线用户列表-----")
@@ -18,18 +21,31 @@ func ShowMenu() {
 		fmt.Println("----------3.信息列表----------")
 		fmt.Println("----------4.退出系统----------")
 		fmt.Println("请选择(1-4):")
-		var key int
-		var content string
-		smsProcess := &SmsProcess{}
-		fmt.Scanf("%d\n", &key)
+		key, err := utils.ReadInt()
+		if err != nil {
+			// 标准输入关闭时退出，避免空转死循环
+			if errors.Is(err, io.EOF) {
+				fmt.Println()
+				os.Exit(0)
+			}
+			fmt.Println("您的输入有误请重新输入")
+			continue
+		}
 		switch key {
 		case 1:
 			outputOnlineUser()
 		case 2:
 			fmt.Println("请输入您想群发的消息")
-			fmt.Scanf("%s\n", &content)
-			err := smsProcess.SendGroupMes(content)
+			content, err := utils.ReadLine()
 			if err != nil {
+				fmt.Println("读取消息失败，请重新输入")
+				continue
+			}
+			if content == "" {
+				fmt.Println("消息不能为空")
+				continue
+			}
+			if err = smsProcess.SendGroupMes(content); err != nil {
 				return
 			}
 		case 3:

@@ -51,6 +51,10 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 	}
 	var loginResMes message.LoginResMes
 	err = json.Unmarshal([]byte(mes.Data), &loginResMes)
+	if err != nil {
+		fmt.Println("解析登录响应失败:", err)
+		return
+	}
 	if loginResMes.Code == 200 {
 		CurUser.Conn = conn
 		CurUser.UserId = userId
@@ -118,6 +122,10 @@ func (this *UserProcess) Register(userId int, userPwd string, userName string) (
 	}
 	var registerResMes message.RegisterResMes
 	err = json.Unmarshal([]byte(mes.Data), &registerResMes)
+	if err != nil {
+		fmt.Println("解析注册响应失败:", err)
+		return
+	}
 	if registerResMes.Code == 200 {
 		fmt.Println("注册成功，请重新登录。")
 	} else {

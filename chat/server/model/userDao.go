@@ -84,8 +84,8 @@ func (this *UserDao) Register(user *message.User) (err error) {
 	if err != nil {
 		return
 	}
-	//入库
-	err = this.client.HSet(ctx, "users", user.UserId, string(data)).Err()
+	//入库（field 与 getUserById 统一为字符串形式）
+	err = this.client.HSet(ctx, "users", strconv.Itoa(user.UserId), string(data)).Err()
 	if err != nil {
 		fmt.Println("保存注册用户错误 err=", err)
 		return

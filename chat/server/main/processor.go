@@ -13,20 +13,17 @@ import (
 
 type Processor struct {
 	Conn net.Conn
+	// up 是本连接唯一的会话：登录成功后 UserId 有效，
+	// 连接结束时据此清理在线表
+	up *process.UserProcess
 }
 
 func (this *Processor) serverProcessMes(mes *message.Message) (err error) {
 	switch mes.Type {
 	case message.LoginMesType:
-		up := &process.UserProcess{
-			Conn: this.Conn,
-		}
-		err = up.ServerProcessLogin(mes)
+		err = this.up.ServerProcessLogin(mes)
 	case message.RegisterMesType:
-		up := &process.UserProcess{
-			Conn: this.Conn,
-		}
-		err = up.ServerProcessRegister(mes)
+		err = this.up.ServerProcessRegister(mes)
 	case message.SmsMesType:
 		smsProcess := &process.SmsProcess{}
 		smsProcess.SendGroupMes(mes)
@@ -37,6 +34,15 @@ func (this *Processor) serverProcessMes(mes *message.Message) (err error) {
 }
 
 func (this *Processor) serve() (err error) {
+	// 每条连接只创建一个 UserProcess，登录后身份保存在其中
+	this.up = &process.UserProcess{
+		Conn: this.Conn,
+	}
+	// 连接结束的唯一清理出口：正常 EOF、读错误、处理错误、panic 都会走到这里。
+	// 必须在 handleConn 的 recover 内层注册，panic 时也能先完成下线清理。
+	defer func() {
+		process.UserOffline(this.up.UserId)
+	}()
 	for {
 		tf := &utils.Transfer{
 			Conn: this.Conn,
@@ -45,7 +51,7 @@ func (this *Processor) serve() (err error) {
 		mes, err = tf.ReadPkg()
 		if err != nil {
 			// EOF：对端在一帧开始前正常关闭；ErrUnexpectedEOF：帧读到一半对端断开。
-			// 两者都视为连接结束，serve 返回后由 handleConn 清理。
+			// 两者都视为连接结束，serve 返回后由 defer 统一清理。
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				fmt.Println("客户端退出，服务端也退出")
 				return

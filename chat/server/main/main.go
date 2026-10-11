@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -49,7 +50,14 @@ func main() {
 		fmt.Println("等待客户端连接服务器......")
 		conn, err := listen.Accept()
 		if err != nil {
-			fmt.Println(err)
+			// listener 被关闭意味着服务主动关停，继续 Accept 毫无意义，退出主循环
+			if errors.Is(err, net.ErrClosed) {
+				fmt.Println("服务器停止接受新连接:", err)
+				return
+			}
+			// fd 耗尽等瞬时错误：不能把 nil conn 交给 handleConn，跳过本轮继续服务
+			fmt.Println("accept err:", err)
+			continue
 		}
 		go handleConn(conn)
 	}

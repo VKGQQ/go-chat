@@ -48,22 +48,36 @@ func (this *UserProcess) Send(data []byte) error {
 	return nil
 }
 
-func (this *UserProcess) NotifyOtherOnlineUser(userId int) {
-	// 基于快照在锁外遍历并发送通知，避免持读锁做网络 IO
+// broadcastUserStatus 向除 userId 外的所有在线用户广播其上/下线状态。
+// 基于快照在锁外遍历发送，避免持读锁做网络 IO。
+func broadcastUserStatus(userId int, status int) {
 	for id, up := range userMgr.GetAllOnlineUsers() {
 		if id == userId {
 			continue
 		}
-		up.NotifyMeOnline(userId)
+		up.NotifyMeStatus(userId, status)
 	}
 }
 
-func (this *UserProcess) NotifyMeOnline(userId int) {
+// UserOffline 是连接结束时的统一清理入口：
+// 先移出在线表（立即阻止后续群发再写该死连接），再向其他在线用户广播下线。
+// 未登录（userId == 0）的连接断开时无需清理。
+func UserOffline(userId int) {
+	if userId == 0 {
+		return
+	}
+	userMgr.DelOnlineUser(userId)
+	fmt.Printf("用户 %d 已下线\n", userId)
+	broadcastUserStatus(userId, message.UserOffline)
+}
+
+// NotifyMeStatus 通知“当前连接对应的用户”：userId 的状态变为 status（上线/下线）
+func (this *UserProcess) NotifyMeStatus(userId int, status int) {
 	var mes message.Message
 	mes.Type = message.NotifyUserStatusMesType
 	var notifyUserStatusMes message.NotifyUserStatusMes
 	notifyUserStatusMes.UserId = userId
-	notifyUserStatusMes.Status = message.UserOnline
+	notifyUserStatusMes.Status = status
 	data, err := json.Marshal(notifyUserStatusMes)
 	if err != nil {
 		fmt.Println("json.Marshal err:", err)
@@ -76,7 +90,7 @@ func (this *UserProcess) NotifyMeOnline(userId int) {
 		return
 	}
 	if err = this.Send(data); err != nil {
-		fmt.Println("NotifyMeOnline err:", err)
+		fmt.Println("NotifyMeStatus err:", err)
 	}
 }
 
@@ -106,7 +120,7 @@ func (this *UserProcess) ServerProcessLogin(mes *message.Message) (err error) {
 		loginResMes.Code = 200
 		this.UserId = user.UserId
 		userMgr.AddOnlineUser(this)
-		this.NotifyOtherOnlineUser(this.UserId)
+		broadcastUserStatus(this.UserId, message.UserOnline)
 		loginResMes.UsersId = userMgr.OnlineUserIds()
 		fmt.Println(user, "登录成功")
 	}

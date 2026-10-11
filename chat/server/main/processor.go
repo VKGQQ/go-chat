@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -43,7 +44,7 @@ func (this *Processor) serve() (err error) {
 		var mes message.Message
 		mes, err = tf.ReadPkg()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				fmt.Println("客户端退出，服务端也退出")
 				return
 			}

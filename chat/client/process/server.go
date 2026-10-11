@@ -21,13 +21,13 @@ func ShowMenu() {
 		var key int
 		var content string
 		smsProcess := &SmsProcess{}
-		fmt.Scanln(&key)
+		fmt.Scanf("%d\n", &key)
 		switch key {
 		case 1:
 			outputOnlineUser()
 		case 2:
 			fmt.Println("请输入您想群发的消息")
-			fmt.Scanln(&content)
+			fmt.Scanf("%s\n", &content)
 			err := smsProcess.SendGroupMes(content)
 			if err != nil {
 				return
@@ -35,7 +35,7 @@ func ShowMenu() {
 		case 3:
 			fmt.Println("信息列表")
 		case 4:
-			fmt.Println("您选择提出系统")
+			fmt.Println("您选择退出系统")
 			os.Exit(0)
 		default:
 			fmt.Println("您的输入有误请重新输入")

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/VKGQQ/goproject_1/chat/server/model"
 )
@@ -26,7 +27,10 @@ func initUserDao() {
 }
 
 func main() {
-	initRedis("127.0.0.1:6379", "", 0, 20)
+	if err := initRedis("127.0.0.1:6379", "", 0, 20); err != nil {
+		fmt.Println("启动失败:", err)
+		os.Exit(1)
+	}
 	initUserDao()
 	fmt.Println("服务器在8889端口监听")
 	listen, err := net.Listen("tcp", "0.0.0.0:8889")

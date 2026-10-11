@@ -44,7 +44,9 @@ func (this *Processor) serve() (err error) {
 		var mes message.Message
 		mes, err = tf.ReadPkg()
 		if err != nil {
-			if errors.Is(err, io.EOF) {
+			// EOF：对端在一帧开始前正常关闭；ErrUnexpectedEOF：帧读到一半对端断开。
+			// 两者都视为连接结束，serve 返回后由 handleConn 清理。
+			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				fmt.Println("客户端退出，服务端也退出")
 				return
 			}

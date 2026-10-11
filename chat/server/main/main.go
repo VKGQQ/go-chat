@@ -9,9 +9,13 @@ import (
 )
 
 func handleConn(conn net.Conn) {
-	defer func(conn net.Conn) {
+	// 单连接兜底：任何意外 panic 只隔离当前连接，不能让整个服务器进程崩溃
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("连接处理异常，已隔离该连接:", r)
+		}
 		_ = conn.Close()
-	}(conn)
+	}()
 	processor := &Processor{
 		Conn: conn,
 	}

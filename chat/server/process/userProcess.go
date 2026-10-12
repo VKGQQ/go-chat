@@ -159,8 +159,13 @@ func (this *UserProcess) ServerProcessRegister(mes *message.Message) (err error)
 	var resMes message.Message
 	resMes.Type = message.RegisterResMesType
 	var registerResMes message.RegisterResMes
-	err = model.MyUserDao.Register(&registerMes.User)
-	if err != nil {
+	// 系统边界校验：客户端输入不可信，任何人都能用裸 TCP 发包，
+	// 非法数据（0 值 id、空密码、空昵称）必须在入库前拦截。
+	// 0 同时是“未登录连接”的哨兵值，注册 0 会污染在线状态判断。
+	if registerMes.User.UserId <= 0 || registerMes.User.UserPwd == "" || registerMes.User.UserName == "" {
+		registerResMes.Code = 507
+		registerResMes.Error = "注册信息不合法：id必须为正整数，密码和昵称不能为空"
+	} else if err = model.MyUserDao.Register(&registerMes.User); err != nil {
 		if errors.Is(err, model.ErrorUserExists) {
 			registerResMes.Code = 505
 			registerResMes.Error = err.Error()

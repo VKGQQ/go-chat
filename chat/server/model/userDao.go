@@ -6,11 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 
 	"github.com/VKGQQ/goproject_1/chat/common/message"
 )
+
+// daoTimeout 单次 Redis 调用的最长等待时间。
+// context.Background() 永不超时：Redis 假死（非宕机，而是卡住不响应）时，
+// 登录/注册请求会无限期挂起，对应客户端永远等不到回复。
+// 所有跨网络调用都必须有截止时间，到点未完成自动取消并返回 context.DeadlineExceeded。
+const daoTimeout = 3 * time.Second
 
 var (
 	MyUserDao *UserDao
@@ -59,7 +66,8 @@ func (this *UserDao) getUserById(ctx context.Context, id int) (user *message.Use
 // 3. 如果用户的id或pwd有错误，则返回对应的错误信息
 
 func (this *UserDao) Login(userId int, userPwd string) (user *message.User, err error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), daoTimeout)
+	defer cancel() // 释放定时器资源，无论成功失败都必须调用
 	user, err = this.getUserById(ctx, userId)
 	if err != nil {
 		return
@@ -73,7 +81,8 @@ func (this *UserDao) Login(userId int, userPwd string) (user *message.User, err 
 }
 
 func (this *UserDao) Register(user *message.User) (err error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), daoTimeout)
+	defer cancel() // 释放定时器资源，无论成功失败都必须调用
 	_, err = this.getUserById(ctx, user.UserId)
 	if err == nil {
 		err = ErrorUserExists

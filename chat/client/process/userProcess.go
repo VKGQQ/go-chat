@@ -11,14 +11,23 @@ import (
 
 type UserProcess struct{}
 
+// serverAddr 服务器地址。0.0.0.0 只能用于监听，客户端拨号必须填具体地址；
+// 提取为常量，Login/Register 共用，部署时改服务器 IP 只需动这一处。
+const serverAddr = "127.0.0.1:8889"
+
 func (this *UserProcess) Login(userId int, userPwd string) (err error) {
-	conn, err := net.Dial("tcp", "0.0.0.0:8889")
+	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
 		return err
 	}
-	defer func(conn net.Conn) {
-		_ = conn.Close()
-	}(conn)
+	// 连接所有权：登录成功前归本函数管，任何失败路径都要关；
+	// 登录成功后所有权移交给 CurUser 与接收 goroutine，本函数不再关闭。
+	success := false
+	defer func() {
+		if !success {
+			_ = conn.Close()
+		}
+	}()
 	var mes message.Message
 	mes.Type = message.LoginMesType
 	var loginMes message.LoginMes
@@ -56,6 +65,7 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 		return
 	}
 	if loginResMes.Code == 200 {
+		success = true // 交接完成：连接转由 CurUser 与接收 goroutine 持有
 		CurUser.Conn = conn
 		CurUser.UserId = userId
 		CurUser.UserStatus = message.UserOnline
@@ -67,11 +77,7 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 			}
 			v++
 			fmt.Printf("%v.%v\n", v, id)
-			user := message.User{
-				UserId:     id,
-				UserStatus: message.UserOnline,
-			}
-			onlineUsers[id] = &user
+			addOnlineUser(id)
 		}
 		fmt.Printf("当前还有%v人在线\n\n", v)
 		go serverProcessMes(conn)
@@ -83,7 +89,7 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 }
 
 func (this *UserProcess) Register(userId int, userPwd string, userName string) (err error) {
-	conn, err := net.Dial("tcp", "0.0.0.0:8889")
+	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
 		return err
 	}

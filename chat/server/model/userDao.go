@@ -79,7 +79,14 @@ func (this *UserDao) Register(user *message.User) (err error) {
 		err = ErrorUserExists
 		return
 	}
-	//这时，说明id在redis还没有，则可以完成注册
+	// 白名单判断：只有“确认用户不存在”才允许注册。
+	// Redis 超时、宕机等未知错误说明无法确定用户是否存在，
+	// 此时放行会覆盖已有账号，必须 fail closed，原样返回错误。
+	if !errors.Is(err, ErrorUserNotExists) {
+		return
+	}
+	// 确认用户不存在，清掉业务错误后放行注册
+	err = nil
 	data, err := json.Marshal(user) //序列化
 	if err != nil {
 		return

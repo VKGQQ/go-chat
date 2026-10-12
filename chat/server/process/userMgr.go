@@ -26,18 +26,28 @@ func init() {
 	}
 }
 
-// AddOnlineUser 完成对onlineUsers添加（写锁，互斥）
-func (this *UserMgr) AddOnlineUser(up *UserProcess) {
+// AddOnlineUser 将新连接写入在线表（写锁，互斥）。
+// 若同一 UserId 已有旧连接（重复登录），在锁内完成“查旧→放新”后返回旧连接，
+// 由调用方在锁外关闭（互踢），避免持锁做 IO。
+func (this *UserMgr) AddOnlineUser(up *UserProcess) (old *UserProcess) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
+	old = this.onlineUsers[up.UserId]
 	this.onlineUsers[up.UserId] = up
+	return
 }
 
-// DelOnlineUser 删除离线用户（写锁，互斥）
-func (this *UserMgr) DelOnlineUser(userId int) {
+// DelOnlineUserIfMatch 仅当在线表中 userId 对应的连接就是 up 本人时才删除（写锁）。
+// 互踢场景下，被踢的旧连接断开时也会触发下线清理，但此时表中已是新连接，
+// 旧连接无权删除。返回是否真正删除，供调用方决定是否需要广播下线。
+func (this *UserMgr) DelOnlineUserIfMatch(userId int, up *UserProcess) (removed bool) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
-	delete(this.onlineUsers, userId)
+	if cur, ok := this.onlineUsers[userId]; ok && cur == up {
+		delete(this.onlineUsers, userId)
+		removed = true
+	}
+	return
 }
 
 // OnlineUserIds 返回当前所有在线用户 id 的快照切片（读锁）

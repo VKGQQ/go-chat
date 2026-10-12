@@ -25,8 +25,14 @@ func (this *Processor) serverProcessMes(mes *message.Message) (err error) {
 	case message.RegisterMesType:
 		err = this.up.ServerProcessRegister(mes)
 	case message.SmsMesType:
+		// 未登录连接（UserId == 0）无权群发
+		if this.up.UserId == 0 {
+			fmt.Println("未登录连接尝试群发，已拒绝")
+			return
+		}
 		smsProcess := &process.SmsProcess{}
-		smsProcess.SendGroupMes(mes)
+		// 发送者身份以服务端登录会话为准，客户端上报的一律不信
+		smsProcess.SendGroupMes(mes, this.up.UserId)
 	default:
 		fmt.Println("消息类型不存在，无法处理......")
 	}
@@ -41,7 +47,7 @@ func (this *Processor) serve() (err error) {
 	// 连接结束的唯一清理出口：正常 EOF、读错误、处理错误、panic 都会走到这里。
 	// 必须在 handleConn 的 recover 内层注册，panic 时也能先完成下线清理。
 	defer func() {
-		process.UserOffline(this.up.UserId)
+		process.UserOffline(this.up)
 	}()
 	for {
 		tf := &utils.Transfer{

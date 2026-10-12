@@ -61,14 +61,18 @@ func broadcastUserStatus(userId int, status int) {
 
 // UserOffline 是连接结束时的统一清理入口：
 // 先移出在线表（立即阻止后续群发再写该死连接），再向其他在线用户广播下线。
-// 未登录（userId == 0）的连接断开时无需清理。
-func UserOffline(userId int) {
-	if userId == 0 {
+// 未登录（UserId == 0）的连接断开时无需清理。
+// 互踢场景：被踢的旧连接断开时表中已是新连接，IfMatch 删除失败，
+// 既不能误删新表项，也不能误广播“下线”（该用户其实还在线）。
+func UserOffline(up *UserProcess) {
+	if up == nil || up.UserId == 0 {
 		return
 	}
-	userMgr.DelOnlineUser(userId)
-	fmt.Printf("用户 %d 已下线\n", userId)
-	broadcastUserStatus(userId, message.UserOffline)
+	if !userMgr.DelOnlineUserIfMatch(up.UserId, up) {
+		return
+	}
+	fmt.Printf("用户 %d 已下线\n", up.UserId)
+	broadcastUserStatus(up.UserId, message.UserOffline)
 }
 
 // NotifyMeStatus 通知“当前连接对应的用户”：userId 的状态变为 status（上线/下线）
@@ -119,7 +123,13 @@ func (this *UserProcess) ServerProcessLogin(mes *message.Message) (err error) {
 	} else {
 		loginResMes.Code = 200
 		this.UserId = user.UserId
-		userMgr.AddOnlineUser(this)
+		// 重复登录互踢：同账号已有旧连接时，新连接入表后关闭旧连接。
+		// 旧连接的读循环随连接关闭而退出，走各自的下线清理，
+		// 因表中已是新连接，旧连接不会误删表项。
+		if old := userMgr.AddOnlineUser(this); old != nil {
+			fmt.Printf("用户 %d 在别处登录，踢掉旧连接\n", this.UserId)
+			_ = old.Conn.Close()
+		}
 		broadcastUserStatus(this.UserId, message.UserOnline)
 		loginResMes.UsersId = userMgr.OnlineUserIds()
 		fmt.Println(user, "登录成功")

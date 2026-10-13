@@ -3,8 +3,10 @@ package process
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/goproject_1/chat/server/model"
 )
 
 type SmsProcess struct {
@@ -66,9 +68,19 @@ func (this *SmsProcess) SendPrivateMes(mes *message.Message, sender *UserProcess
 	// 精准路由：查在线表找目标
 	targetUp, err := userMgr.GetOnlineUserById(smsPrivateMes.TargetId)
 	if err != nil {
-		// 目标不在线：回系统提示给发送者
+		// 目标不在线：存离线消息队列，等对方上线后按发送顺序投递
+		offlineMsg := &model.OfflineMessage{
+			SenderId:  sender.UserId,
+			TargetId:  smsPrivateMes.TargetId,
+			Content:   smsPrivateMes.Content,
+			Timestamp: time.Now(),
+		}
+		if storeErr := model.MyOfflineDao.StoreOfflineMessage(offlineMsg); storeErr != nil {
+			fmt.Println("存离线消息失败 err=", storeErr)
+		}
+		// 回系统提示给发送者
 		notify := message.SmsPrivateMes{
-			Content: fmt.Sprintf("用户 %d 不在线", smsPrivateMes.TargetId),
+			Content: fmt.Sprintf("用户 %d 不在线，消息已保存，将在其上线后送达", smsPrivateMes.TargetId),
 		}
 		notifyData, _ := json.Marshal(notify)
 		var notifyMes message.Message

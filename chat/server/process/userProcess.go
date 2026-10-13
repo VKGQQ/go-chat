@@ -146,7 +146,51 @@ func (this *UserProcess) ServerProcessLogin(mes *message.Message) (err error) {
 		return
 	}
 	err = this.Send(data)
+	// 登录响应发出后再异步投递离线消息：不阻塞登录，
+	// 用户先看到自己上线，离线消息随后陆续到达。
+	if err == nil && loginResMes.Code == 200 {
+		go this.deliverOfflineMessages(this.UserId)
+	}
 	return
+}
+
+// deliverOfflineMessages 登录成功后异步投递离线消息。
+// LPOP 逐条“取出即删”，投递失败推回队首并停止，等下次上线再投；
+// 消息包装成 SmsPrivateMesType，客户端现有接收逻辑直接处理，无需改动。
+func (this *UserProcess) deliverOfflineMessages(userId int) {
+	for {
+		msg, err := model.MyOfflineDao.PopOfflineMessage(userId)
+		if err != nil {
+			fmt.Println("读取离线消息失败 err=", err)
+			return
+		}
+		if msg == nil {
+			return // 没有更多离线消息
+		}
+		smsPrivateMes := message.SmsPrivateMes{
+			TargetId: userId,
+			Content:  msg.Content,
+		}
+		smsPrivateMes.UserId = msg.SenderId
+		smsData, err := json.Marshal(smsPrivateMes)
+		if err != nil {
+			fmt.Println("json.Marshal err=", err)
+			return
+		}
+		var mes message.Message
+		mes.Type = message.SmsPrivateMesType
+		mes.Data = string(smsData)
+		data, err := json.Marshal(mes)
+		if err != nil {
+			fmt.Println("json.Marshal err=", err)
+			return
+		}
+		if err = this.Send(data); err != nil {
+			// 连接可能已断：推回队首保序，停止本轮投递
+			_ = model.MyOfflineDao.RequeueOfflineMessage(msg)
+			return
+		}
+	}
 }
 
 func (this *UserProcess) ServerProcessRegister(mes *message.Message) (err error) {

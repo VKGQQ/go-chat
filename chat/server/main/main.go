@@ -29,6 +29,7 @@ func handleConn(conn net.Conn) {
 
 func initUserDao() {
 	model.MyUserDao = model.NewUserDao(redisClient)
+	model.MyOfflineDao = model.NewOfflineDao(redisClient)
 }
 
 func main() {

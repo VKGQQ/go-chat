@@ -80,6 +80,9 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 			addOnlineUser(id)
 		}
 		fmt.Printf("当前还有%v人在线\n\n", v)
+		// 先加载本地历史再启动接收 goroutine：
+		// 保证旧记录在前、新消息在后，避免新消息插到历史前面的乱序
+		loadHistory(userId)
 		go serverProcessMes(conn)
 		ShowMenu()
 	} else {

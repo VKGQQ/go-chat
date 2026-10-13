@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/VKGQQ/goproject_1/chat/common/message"
 )
@@ -73,7 +74,10 @@ func (this *UserDao) Login(userId int, userPwd string) (user *message.User, err 
 		return
 	}
 	//这时证明这个用户是获取到
-	if user.UserPwd != userPwd {
+	// 库里存的是 bcrypt 哈希，用 CompareHashAndPassword 做恒定时间比较。
+	// 它返回的错误不区分“密码不匹配”和“哈希格式异常”，统一按密码错误处理，
+	// 避免向外部暴露存储细节
+	if bcrypt.CompareHashAndPassword([]byte(user.UserPwd), []byte(userPwd)) != nil {
 		err = ErrorUserPwd
 		return
 	}
@@ -96,6 +100,14 @@ func (this *UserDao) Register(user *message.User) (err error) {
 	}
 	// 确认用户不存在，清掉业务错误后放行注册
 	err = nil
+	// 明文密码绝不落盘：入库前替换为 bcrypt 哈希。
+	// bcrypt 慢哈希（2^cost 轮运算）且随机盐内嵌在结果里，
+	// 即使 Redis 数据泄漏，攻击者也无法低成本还原明文、彩虹表直接失效
+	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(user.UserPwd), bcrypt.DefaultCost)
+	if err != nil {
+		return
+	}
+	user.UserPwd = string(hashedPwd)
 	data, err := json.Marshal(user) //序列化
 	if err != nil {
 		return

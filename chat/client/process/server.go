@@ -64,7 +64,7 @@ func ShowMenu() {
 				fmt.Println("发送私聊失败:", err)
 			}
 		case 4:
-			fmt.Println("信息列表")
+			outputMessageRecords()
 		case 5:
 			fmt.Println("您选择退出系统")
 			os.Exit(0)

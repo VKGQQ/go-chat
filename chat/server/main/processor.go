@@ -33,6 +33,14 @@ func (this *Processor) serverProcessMes(mes *message.Message) (err error) {
 		smsProcess := &process.SmsProcess{}
 		// 发送者身份以服务端登录会话为准，客户端上报的一律不信
 		smsProcess.SendGroupMes(mes, this.up.UserId)
+	case message.SmsPrivateMesType:
+		// 未登录连接无权私聊
+		if this.up.UserId == 0 {
+			fmt.Println("未登录连接尝试私聊，已拒绝")
+			return
+		}
+		smsProcess := &process.SmsProcess{}
+		smsProcess.SendPrivateMes(mes, this.up)
 	default:
 		fmt.Println("消息类型不存在，无法处理......")
 	}

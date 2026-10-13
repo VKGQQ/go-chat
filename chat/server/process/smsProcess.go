@@ -50,3 +50,50 @@ func (this *SmsProcess) SendGroupMes(mes *message.Message, senderId int) {
 		}
 	}
 }
+
+// SendPrivateMes 私聊转发。sender 是发送者的会话实例：
+// 既提供权威发送者身份（和群聊同理防伪造），又能在目标不在线时回通知。
+func (this *SmsProcess) SendPrivateMes(mes *message.Message, sender *UserProcess) {
+	var smsPrivateMes message.SmsPrivateMes
+	err := json.Unmarshal([]byte(mes.Data), &smsPrivateMes)
+	if err != nil {
+		fmt.Println("json.Unmarshal err=", err)
+		return
+	}
+	// 身份覆盖：客户端填的 UserId 不可信，以服务端登录会话为准
+	smsPrivateMes.UserId = sender.UserId
+
+	// 精准路由：查在线表找目标
+	targetUp, err := userMgr.GetOnlineUserById(smsPrivateMes.TargetId)
+	if err != nil {
+		// 目标不在线：回系统提示给发送者
+		notify := message.SmsPrivateMes{
+			Content: fmt.Sprintf("用户 %d 不在线", smsPrivateMes.TargetId),
+		}
+		notifyData, _ := json.Marshal(notify)
+		var notifyMes message.Message
+		notifyMes.Type = message.SmsPrivateMesType
+		notifyMes.Data = string(notifyData)
+		data, _ := json.Marshal(notifyMes)
+		if err := sender.Send(data); err != nil {
+			fmt.Println("发送私聊通知失败 err=", err)
+		}
+		return
+	}
+
+	// 重新序列化（用覆盖后的权威身份），转发给目标
+	smsData, err := json.Marshal(smsPrivateMes)
+	if err != nil {
+		fmt.Println("json.Marshal err=", err)
+		return
+	}
+	mes.Data = string(smsData)
+	data, err := json.Marshal(mes)
+	if err != nil {
+		fmt.Println("json.Marshal err=", err)
+		return
+	}
+	if err := targetUp.Send(data); err != nil {
+		fmt.Println("私聊转发失败 err=", err)
+	}
+}

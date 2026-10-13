@@ -8,6 +8,7 @@ const (
 	NotifyUserStatusMesType = "NotifyUserStatusMes"
 	SmsMesType              = "SmsMes"
 	SmsTransferMesType      = "SmsTransferMes"
+	SmsPrivateMesType       = "SmsPrivateMes"
 )
 
 const (
@@ -54,4 +55,10 @@ type SmsMes struct {
 type SmsTransferMes struct {
 	User    `json:"user"`
 	Content string `json:"content"`
+}
+
+type SmsPrivateMes struct {
+	User     `json:"user"` // 发送者信息（UserId 会被服务端覆盖，和群聊 #11 同理）
+	TargetId int           `json:"targetId"` // 接收者用户ID
+	Content  string        `json:"content"`
 }

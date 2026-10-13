@@ -17,10 +17,11 @@ func ShowMenu() {
 	for {
 		fmt.Println("----------恭喜您登录成功---------")
 		fmt.Println("----------1.显示在线用户列表-----")
-		fmt.Println("----------2.发送信息----------")
-		fmt.Println("----------3.信息列表----------")
-		fmt.Println("----------4.退出系统----------")
-		fmt.Println("请选择(1-4):")
+		fmt.Println("----------2.发送群消息----------")
+		fmt.Println("----------3.发送私聊----------")
+		fmt.Println("----------4.信息列表----------")
+		fmt.Println("----------5.退出系统----------")
+		fmt.Println("请选择(1-5):")
 		key, err := utils.ReadInt()
 		if err != nil {
 			// 标准输入关闭时退出，避免空转死循环
@@ -49,8 +50,22 @@ func ShowMenu() {
 				return
 			}
 		case 3:
-			fmt.Println("信息列表")
+			fmt.Println("请输入对方用户ID：")
+			targetId, err := utils.ReadInt()
+			if err != nil {
+				fmt.Println("输入有误，请重新选择")
+				continue
+			}
+			if targetId == CurUser.UserId {
+				fmt.Println("不能给自己发私聊")
+				continue
+			}
+			if err = smsProcess.SendPrivateMes(targetId); err != nil {
+				fmt.Println("发送私聊失败:", err)
+			}
 		case 4:
+			fmt.Println("信息列表")
+		case 5:
 			fmt.Println("您选择退出系统")
 			os.Exit(0)
 		default:
@@ -80,6 +95,8 @@ func serverProcessMes(Conn net.Conn) {
 			outputOnlineUser()
 		case message.SmsTransferMesType:
 			outputGroupMes(&mes)
+		case message.SmsPrivateMesType:
+			outputPrivateMes(&mes)
 		default:
 			fmt.Println("服务器返回未知消息类型")
 		}

@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/VKGQQ/goproject_1/chat/server/model"
+	"github.com/VKGQQ/go-chat/chat/server/model"
 )
 
 // handleConn 处理单个客户端连接的完整生命周期，直到连接断开。

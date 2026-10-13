@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/VKGQQ/goproject_1/chat/client/process"
-	"github.com/VKGQQ/goproject_1/chat/client/utils"
+	"github.com/VKGQQ/go-chat/chat/client/process"
+	"github.com/VKGQQ/go-chat/chat/client/utils"
 )
 
 // 登录/注册表单的用户输入

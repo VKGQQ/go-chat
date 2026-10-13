@@ -5,8 +5,8 @@ import (
 
 	"encoding/json"
 
-	"github.com/VKGQQ/goproject_1/chat/client/utils"
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/client/utils"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // SmsProcess 消息发送方：负责群聊与私聊消息的封装和发送。

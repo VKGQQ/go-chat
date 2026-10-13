@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/VKGQQ/goproject_1/chat/common/message"
-	"github.com/VKGQQ/goproject_1/chat/server/model"
+	"github.com/VKGQQ/go-chat/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/server/model"
 )
 
 // SmsProcess 消息转发处理器：负责群聊与私聊的路由和投递。

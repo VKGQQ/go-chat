@@ -8,8 +8,8 @@ import (
 	"net"
 	"os"
 
-	"github.com/VKGQQ/goproject_1/chat/client/utils"
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/client/utils"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // ShowMenu 登录成功后的聊天主菜单：显示在线用户、群聊、私聊、信息列表、退出。

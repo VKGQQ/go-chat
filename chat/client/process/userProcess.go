@@ -8,8 +8,8 @@ import (
 	"net"
 	"os"
 
-	"github.com/VKGQQ/goproject_1/chat/client/utils"
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/client/utils"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // UserProcess 用户账号相关请求（登录、注册）的发起方。

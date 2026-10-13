@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VKGQQ/goproject_1/chat/common/message"
-	"github.com/VKGQQ/goproject_1/chat/server/model"
+	"github.com/VKGQQ/go-chat/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/server/model"
 )
 
 // connWriteTimeout 单次发包（含帧头和帧体）的写超时时间。

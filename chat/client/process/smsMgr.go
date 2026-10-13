@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // maxRecords 信息列表的最大容量。

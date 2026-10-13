@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/VKGQQ/goproject_1/chat/client/model"
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/client/model"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // onlineUsers 会被两个 goroutine 并发访问：

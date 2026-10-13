@@ -10,7 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // newTestUserDao 每个用例使用独立的 miniredis 实例（内存版 Redis），

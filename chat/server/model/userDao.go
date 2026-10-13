@@ -11,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // daoTimeout 单次 Redis 调用的最长等待时间。

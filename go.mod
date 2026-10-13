@@ -1,4 +1,4 @@
-module github.com/VKGQQ/goproject_1
+module github.com/VKGQQ/go-chat
 
 go 1.26.0
 

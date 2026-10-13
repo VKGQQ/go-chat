@@ -6,9 +6,9 @@ import (
 	"io"
 	"net"
 
-	"github.com/VKGQQ/goproject_1/chat/common/message"
-	"github.com/VKGQQ/goproject_1/chat/server/process"
-	"github.com/VKGQQ/goproject_1/chat/server/utils"
+	"github.com/VKGQQ/go-chat/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/server/process"
+	"github.com/VKGQQ/go-chat/chat/server/utils"
 )
 
 // Processor 单个客户端连接的消息处理器：读取协议帧并按类型分发。

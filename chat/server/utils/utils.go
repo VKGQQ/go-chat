@@ -8,7 +8,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/VKGQQ/goproject_1/chat/common/message"
+	"github.com/VKGQQ/go-chat/chat/common/message"
 )
 
 // MaxPkgSize 是协议允许的单个包体最大字节数。

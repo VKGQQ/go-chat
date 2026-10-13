@@ -1,0 +1,43 @@
+# CI 流水线：推送/PR 到 main 时自动执行格式检查、静态检查、编译和测试。
+# 使用 ubuntu-latest：自带 gcc，可以跑 -race 竞态检测（Windows 本机缺 gcc 跑不了）。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Go 版本从 go.mod 读取，与本地开发环境保持一致；
+      # cache 开启后二次运行的依赖下载几乎为 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # 任何未 gofmt 的文件直接失败，保证仓库代码风格统一
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "以下文件未通过 gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      # -race 检测并发读写真问题（在线表、消息记录等共享状态）；
+      # -cover 输出覆盖率摘要
+      - name: Test
+        run: go test -race -cover ./...

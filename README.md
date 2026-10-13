@@ -1,5 +1,7 @@
 # Go 多人聊天系统
 
+[![CI](https://github.com/VKGQQ/goproject_1/actions/workflows/ci.yml/badge.svg)](https://github.com/VKGQQ/goproject_1/actions/workflows/ci.yml)
+
 基于 Go + Redis 的 TCP 多人聊天系统，采用 C/S 架构与自定义二进制协议，支持注册登录、群聊、私聊、在线状态广播、离线消息与本地聊天记录持久化。
 
 ## 功能特性

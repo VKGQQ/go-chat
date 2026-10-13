@@ -12,6 +12,8 @@ import (
 	"github.com/VKGQQ/goproject_1/chat/common/message"
 )
 
+// ShowMenu 登录成功后的聊天主菜单：显示在线用户、群聊、私聊、信息列表、退出。
+// 循环阻塞在当前 goroutine，直到用户选择退出进程。
 func ShowMenu() {
 	smsProcess := &SmsProcess{}
 	for {
@@ -74,6 +76,8 @@ func ShowMenu() {
 	}
 }
 
+// serverProcessMes 接收 goroutine 的主循环：持续读取服务端推送，
+// 按类型分发到状态更新、群聊展示或私聊展示；连接断开时退出。
 func serverProcessMes(Conn net.Conn) {
 	tf := &utils.Transfer{
 		Conn: Conn,

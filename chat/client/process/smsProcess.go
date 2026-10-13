@@ -9,50 +9,41 @@ import (
 	"github.com/VKGQQ/goproject_1/chat/common/message"
 )
 
+// SmsProcess 消息发送方：负责群聊与私聊消息的封装和发送。
 type SmsProcess struct {
 }
 
-//发送群聊的消息
-
+// SendGroupMes 发送群聊消息。
+// 发送者 UserId 会被服务端按登录会话强制覆盖，这里填充仅为结构完整。
 func (this *SmsProcess) SendGroupMes(content string) (err error) {
-
-	//1 创建一个Mes
 	var mes message.Message
 	mes.Type = message.SmsMesType
 
-	//2 创建一个SmsMes 实例
 	var smsMes message.SmsMes
-	smsMes.Content = content               //内容.
-	smsMes.UserId = CurUser.UserId         //
-	smsMes.UserStatus = CurUser.UserStatus //
+	smsMes.Content = content
+	smsMes.UserId = CurUser.UserId
+	smsMes.UserStatus = CurUser.UserStatus
 
-	//3.序列化 smsMes
 	data, err := json.Marshal(smsMes)
 	if err != nil {
 		fmt.Println("SendGroupMes json.Marshal fail =", err.Error())
 		return
 	}
-
 	mes.Data = string(data)
-
-	//4. 对mes再次序列化
 	data, err = json.Marshal(mes)
 	if err != nil {
 		fmt.Println("SendGroupMes json.Marshal fail =", err.Error())
 		return
 	}
 
-	//5. 将mes发送给服务器。。
 	tf := &utils.Transfer{
 		Conn: CurUser.Conn,
 	}
-	//6.发送
 	err = tf.WritePkg(data)
 	if err != nil {
 		fmt.Println("SendGroupMes err=", err.Error())
 		return
 	}
-
 	return
 }
 

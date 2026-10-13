@@ -1,3 +1,5 @@
+// Package process 实现客户端核心业务逻辑：登录/注册、消息收发、
+// 在线用户列表维护和本地聊天记录持久化。
 package process
 
 import (
@@ -10,6 +12,7 @@ import (
 	"github.com/VKGQQ/goproject_1/chat/common/message"
 )
 
+// UserProcess 用户账号相关请求（登录、注册）的发起方。
 type UserProcess struct{}
 
 // serverAddr 服务器地址。0.0.0.0 只能用于监听，客户端拨号必须填具体地址；
@@ -24,6 +27,8 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+// Login 发起登录请求。成功后初始化 CurUser 会话、加载本地聊天记录、
+// 启动服务端消息接收 goroutine，并进入聊天主菜单（阻塞直至退出）。
 func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
@@ -100,6 +105,7 @@ func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 	return
 }
 
+// Register 发起注册请求，打印服务端返回的结果后返回主菜单。
 func (this *UserProcess) Register(userId int, userPwd string, userName string) (err error) {
 	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {

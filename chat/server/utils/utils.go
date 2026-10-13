@@ -1,3 +1,4 @@
+// Package utils 提供服务端的协议帧读写工具。
 package utils
 
 import (
@@ -14,6 +15,7 @@ import (
 // 超过该长度的包视为畸形包/攻击包，直接拒绝，避免切片越界。
 const MaxPkgSize = 8096
 
+// Transfer 协议帧读写器：按“4 字节大端长度 + JSON 包体”的格式收发消息。
 type Transfer struct {
 	Conn net.Conn
 	Buf  [8096]byte
@@ -44,6 +46,7 @@ func (this *Transfer) ReadPkg() (mes message.Message, err error) {
 	return
 }
 
+// WritePkg 将 data 封装为一个完整协议帧写出（4 字节长度头 + 包体）。
 func (this *Transfer) WritePkg(data []byte) (err error) {
 	var pkgLen uint32
 	pkgLen = uint32(len(data))

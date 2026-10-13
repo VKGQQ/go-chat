@@ -11,6 +11,7 @@ import (
 	"github.com/VKGQQ/goproject_1/chat/server/utils"
 )
 
+// Processor 单个客户端连接的消息处理器：读取协议帧并按类型分发。
 type Processor struct {
 	Conn net.Conn
 	// up 是本连接唯一的会话：登录成功后 UserId 有效，
@@ -18,6 +19,8 @@ type Processor struct {
 	up *process.UserProcess
 }
 
+// serverProcessMes 按消息类型分发到对应业务处理函数。
+// 群聊/私聊要求已登录（UserId != 0），发送者身份以服务端会话为准。
 func (this *Processor) serverProcessMes(mes *message.Message) (err error) {
 	switch mes.Type {
 	case message.LoginMesType:
@@ -47,6 +50,8 @@ func (this *Processor) serverProcessMes(mes *message.Message) (err error) {
 	return
 }
 
+// serve 循环读取并处理该连接上的消息，直到连接断开或出错。
+// 返回时由 defer 统一执行用户下线清理。
 func (this *Processor) serve() (err error) {
 	// 每条连接只创建一个 UserProcess，登录后身份保存在其中
 	this.up = &process.UserProcess{

@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9/logging"
 )
 
+// redisClient 全局唯一的 Redis 客户端，由 initRedis 创建。
 var redisClient *redis.Client
 
 // 启动阶段等待 Redis 就绪的重试参数
@@ -18,6 +19,10 @@ const (
 	redisPingTimeout = 3 * time.Second // 单次 Ping 的超时时间
 )
 
+// initRedis 创建全局 Redis 客户端并验证连通性。
+// 容忍 Redis 比应用晚就绪的部署时序（如容器编排中依赖先启动）：
+// 最多重试 redisMaxRetries 次，每次间隔 redisRetryGap；
+// 全部失败则返回错误，由 main 决定 fail fast 退出。
 func initRedis(address string, password string, db int, poolSize int) error {
 	// 关闭 go-redis 内部日志：连接失败时它会按自己的策略反复重试并刷屏，
 	// 错误统一由我们的外层重试逻辑记录，避免两层重试日志叠加。
@@ -34,9 +39,6 @@ func initRedis(address string, password string, db int, poolSize int) error {
 		ConnMaxIdleTime: 5 * time.Minute,
 	})
 
-	// 容忍 Redis 比应用晚就绪的部署时序（如容器编排中依赖先启动）：
-	// 最多重试 redisMaxRetries 次，每次间隔 redisRetryGap；
-	// 全部失败则返回错误，由 main 决定 fail fast 退出。
 	var lastErr error
 	for i := 1; i <= redisMaxRetries; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), redisPingTimeout)

@@ -20,19 +20,15 @@ import (
 // 所有跨网络调用都必须有截止时间，到点未完成自动取消并返回 context.DeadlineExceeded。
 const daoTimeout = 3 * time.Second
 
-var (
-	MyUserDao *UserDao
-)
+// MyUserDao 全局唯一的 UserDao 实例，在 main 中初始化 Redis 后注入。
+var MyUserDao *UserDao
 
-//定义一个UserDao 结构体体
-//完成对User 结构体的各种操作
-
+// UserDao 用户账号的数据访问对象，基于 Redis Hash "users" 存取。
 type UserDao struct {
 	client *redis.Client
 }
 
-// 使用工厂模式，创建一个UserDao实例
-
+// NewUserDao 创建 UserDao 实例。
 func NewUserDao(client *redis.Client) (userDao *UserDao) {
 	userDao = &UserDao{
 		client: client,
@@ -40,19 +36,16 @@ func NewUserDao(client *redis.Client) (userDao *UserDao) {
 	return
 }
 
-// 1. 根据用户id 返回 一个User实例+err
+// getUserById 根据用户 id 查询账号；用户不存在时返回 ErrorUserNotExists。
 func (this *UserDao) getUserById(ctx context.Context, id int) (user *message.User, err error) {
-	//通过给定id 去 redis查询这个用户
 	res, err := this.client.HGet(ctx, "users", strconv.Itoa(id)).Result()
 	if err != nil {
-		//错误!
-		if errors.Is(err, redis.Nil) { //表示在 users 哈希中，没有找到对应id
+		if errors.Is(err, redis.Nil) {
 			err = ErrorUserNotExists
 		}
 		return
 	}
 	user = &message.User{}
-	//这里我们需要把res 反序列化成User实例
 	err = json.Unmarshal([]byte(res), user)
 	if err != nil {
 		fmt.Println("json.Unmarshal err=", err)
@@ -61,11 +54,8 @@ func (this *UserDao) getUserById(ctx context.Context, id int) (user *message.Use
 	return
 }
 
-// 完成登录的校验 Login
-// 1. Login 完成对用户的验证
-// 2. 如果用户的id和pwd都正确，则返回一个user实例
-// 3. 如果用户的id或pwd有错误，则返回对应的错误信息
-
+// Login 校验用户 id 与密码。
+// 校验通过返回用户实例；用户不存在返回 ErrorUserNotExists，密码错误返回 ErrorUserPwd。
 func (this *UserDao) Login(userId int, userPwd string) (user *message.User, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), daoTimeout)
 	defer cancel() // 释放定时器资源，无论成功失败都必须调用
@@ -73,7 +63,6 @@ func (this *UserDao) Login(userId int, userPwd string) (user *message.User, err 
 	if err != nil {
 		return
 	}
-	//这时证明这个用户是获取到
 	// 库里存的是 bcrypt 哈希，用 CompareHashAndPassword 做恒定时间比较。
 	// 它返回的错误不区分“密码不匹配”和“哈希格式异常”，统一按密码错误处理，
 	// 避免向外部暴露存储细节
@@ -84,6 +73,10 @@ func (this *UserDao) Login(userId int, userPwd string) (user *message.User, err 
 	return
 }
 
+// Register 注册新用户。
+// 白名单判断（fail closed）：只有“确认用户不存在”才允许注册。
+// Redis 超时、宕机等未知错误说明无法确定用户是否存在，
+// 此时放行会覆盖已有账号，必须原样返回错误。
 func (this *UserDao) Register(user *message.User) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), daoTimeout)
 	defer cancel() // 释放定时器资源，无论成功失败都必须调用
@@ -92,9 +85,6 @@ func (this *UserDao) Register(user *message.User) (err error) {
 		err = ErrorUserExists
 		return
 	}
-	// 白名单判断：只有“确认用户不存在”才允许注册。
-	// Redis 超时、宕机等未知错误说明无法确定用户是否存在，
-	// 此时放行会覆盖已有账号，必须 fail closed，原样返回错误。
 	if !errors.Is(err, ErrorUserNotExists) {
 		return
 	}
@@ -108,11 +98,11 @@ func (this *UserDao) Register(user *message.User) (err error) {
 		return
 	}
 	user.UserPwd = string(hashedPwd)
-	data, err := json.Marshal(user) //序列化
+	data, err := json.Marshal(user)
 	if err != nil {
 		return
 	}
-	//入库（field 与 getUserById 统一为字符串形式）
+	// field 与 getUserById 统一使用 id 的字符串形式
 	err = this.client.HSet(ctx, "users", strconv.Itoa(user.UserId), string(data)).Err()
 	if err != nil {
 		fmt.Println("保存注册用户错误 err=", err)

@@ -1,3 +1,5 @@
+// Package process 实现服务端核心业务逻辑：登录/注册处理、
+// 在线用户管理、群聊与私聊转发、离线消息投递。
 package process
 
 import (
@@ -18,6 +20,8 @@ import (
 // 持有的 writeMu 也会一直不释放，导致其他 goroutine 无法给该用户发包。
 const connWriteTimeout = 5 * time.Second
 
+// UserProcess 一个在线用户连接的会话：持有连接、已认证的用户 id，
+// 以及该连接专属的写锁。每条连接有且只有一个实例。
 type UserProcess struct {
 	Conn   net.Conn
 	UserId int
@@ -98,6 +102,9 @@ func (this *UserProcess) NotifyMeStatus(userId int, status int) {
 	}
 }
 
+// ServerProcessLogin 处理登录请求：校验账号密码，成功后登记在线表、
+// 互踢旧连接、广播上线通知并异步投递离线消息。
+// 响应 Code：200 成功；500 用户不存在；403 密码错误；505 服务器内部错误。
 func (this *UserProcess) ServerProcessLogin(mes *message.Message) (err error) {
 	var loginMes message.LoginMes
 	err = json.Unmarshal([]byte(mes.Data), &loginMes)
@@ -193,6 +200,8 @@ func (this *UserProcess) deliverOfflineMessages(userId int) {
 	}
 }
 
+// ServerProcessRegister 处理注册请求：先做服务端边界校验，再写入存储。
+// 响应 Code：200 成功；505 用户已存在；506 服务器内部错误；507 注册信息不合法。
 func (this *UserProcess) ServerProcessRegister(mes *message.Message) (err error) {
 	var registerMes message.RegisterMes
 	err = json.Unmarshal([]byte(mes.Data), &registerMes)

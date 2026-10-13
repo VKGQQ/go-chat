@@ -21,17 +21,20 @@ type OfflineMessage struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// MyOfflineDao 全局唯一的 OfflineDao 实例，在 main 中初始化 Redis 后注入。
 var MyOfflineDao *OfflineDao
 
+// OfflineDao 离线消息的数据访问对象，基于 Redis List 存取。
 type OfflineDao struct {
 	client *redis.Client
 }
 
+// NewOfflineDao 创建 OfflineDao 实例。
 func NewOfflineDao(client *redis.Client) *OfflineDao {
 	return &OfflineDao{client: client}
 }
 
-// offlineKey 一个用户一个 List：offline:msg:{userId}
+// offlineKey 每个用户对应一个 List：offline:msg:{userId}
 func offlineKey(userId int) string {
 	return "offline:msg:" + strconv.Itoa(userId)
 }
@@ -54,13 +57,13 @@ func (this *OfflineDao) StoreOfflineMessage(msg *OfflineMessage) (err error) {
 // PopOfflineMessage 原子地取出并删除最早的一条离线消息（LPOP）。
 // 返回 (nil, nil) 表示队列为空，属正常情况。
 // 取+删一步完成，不存在"取了没删"的泄漏窗口；
-// 投递失败时调用方应 RequeueOfflineMessage 推回队首。
+// 投递失败时调用方应通过 RequeueOfflineMessage 推回队首。
 func (this *OfflineDao) PopOfflineMessage(userId int) (msg *OfflineMessage, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), daoTimeout)
 	defer cancel()
 	data, err := this.client.LPop(ctx, offlineKey(userId)).Result()
 	if err != nil {
-		if errors.Is(err, redis.Nil) { // 队列为空
+		if errors.Is(err, redis.Nil) {
 			return nil, nil
 		}
 		return nil, err

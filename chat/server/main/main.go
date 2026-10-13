@@ -1,3 +1,5 @@
+// Package main 聊天服务端入口：初始化 Redis 与 DAO，监听 0.0.0.0:8889，
+// 并为每个客户端连接启动独立的处理协程。
 package main
 
 import (
@@ -9,6 +11,7 @@ import (
 	"github.com/VKGQQ/goproject_1/chat/server/model"
 )
 
+// handleConn 处理单个客户端连接的完整生命周期，直到连接断开。
 func handleConn(conn net.Conn) {
 	// 单连接兜底：任何意外 panic 只隔离当前连接，不能让整个服务器进程崩溃
 	defer func() {
@@ -27,6 +30,8 @@ func handleConn(conn net.Conn) {
 	}
 }
 
+// initUserDao 在 Redis 连接就绪后，将各 DAO 实例注入 model 包的全局变量。
+// 必须先于任何请求处理调用，否则全局 DAO 为 nil 会直接 panic。
 func initUserDao() {
 	model.MyUserDao = model.NewUserDao(redisClient)
 	model.MyOfflineDao = model.NewOfflineDao(redisClient)
@@ -42,6 +47,7 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+// main 启动流程：连接 Redis（失败即退出）→ 初始化 DAO → 监听端口 → 循环接受连接。
 func main() {
 	redisAddr := getEnv("REDIS_ADDR", "127.0.0.1:6379")
 	redisPwd := getEnv("REDIS_PASSWORD", "")

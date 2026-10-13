@@ -6,12 +6,12 @@ import (
 	"sync"
 )
 
-// 因为UserMgr 实例在服务器端有且只有一个
-// 因为在很多的地方，都会使用到，因此将其定义为全局变量
+// userMgr 全局唯一的在线用户管理器，进程内单例，由 init 初始化。
 var (
 	userMgr *UserMgr
 )
 
+// UserMgr 在线用户管理器：维护 userId -> 连接会话 的映射。
 type UserMgr struct {
 	// onlineUsers 会被多个连接的 goroutine 并发读写，必须用读写锁保护。
 	// 读多写少（转发/查询频繁，上下线低频），因此选用 RWMutex。
@@ -19,7 +19,7 @@ type UserMgr struct {
 	onlineUsers map[int]*UserProcess
 }
 
-// 完成对userMgr初始化工作
+// init 初始化全局在线用户表，进程启动时自动执行。
 func init() {
 	userMgr = &UserMgr{
 		onlineUsers: make(map[int]*UserProcess, 1024),
@@ -79,7 +79,7 @@ func (this *UserMgr) GetOnlineUserById(userId int) (up *UserProcess, err error) 
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	up, ok := this.onlineUsers[userId]
-	if !ok { //说明查找的这个用户，当前不在线。
+	if !ok {
 		err = fmt.Errorf("用户%d 不存在", userId)
 		return
 	}

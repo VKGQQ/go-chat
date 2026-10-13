@@ -145,8 +145,8 @@ func outputMessageRecords() {
 	fmt.Println()
 }
 
+// outputGroupMes 处理服务端下行的群聊消息：记录到信息列表并打印。
 func outputGroupMes(mes *message.Message) {
-	//反序列化mes.Data
 	var smsMes message.SmsMes
 	err := json.Unmarshal([]byte(mes.Data), &smsMes)
 	if err != nil {
@@ -154,7 +154,6 @@ func outputGroupMes(mes *message.Message) {
 		return
 	}
 
-	// 写入信息列表（群聊）
 	addMessageRecord(MessageRecord{
 		Type:      "group",
 		SenderId:  smsMes.UserId,
@@ -162,13 +161,14 @@ func outputGroupMes(mes *message.Message) {
 		Timestamp: time.Now(),
 	})
 
-	//显示信息
 	info := fmt.Sprintf("接收到用户id:\t%d 发来的信息:\t%s",
 		smsMes.UserId, smsMes.Content)
 	fmt.Println(info)
 	fmt.Println()
 }
 
+// outputPrivateMes 处理服务端下行的私聊消息：记录到信息列表并打印。
+// UserId == 0 的消息视为系统提示（如“用户不在线”），单独归类展示。
 func outputPrivateMes(mes *message.Message) {
 	var smsPrivateMes message.SmsPrivateMes
 	err := json.Unmarshal([]byte(mes.Data), &smsPrivateMes)

@@ -1,3 +1,4 @@
+// Package main 聊天客户端入口：提供登录/注册菜单，登录成功后进入聊天主菜单。
 package main
 
 import (
@@ -10,10 +11,12 @@ import (
 	"github.com/VKGQQ/goproject_1/chat/client/utils"
 )
 
+// 登录/注册表单的用户输入
 var userId int
 var userPwd string
 var userName string
 
+// main 循环展示顶层菜单：登录、注册、退出。
 func main() {
 	for {
 		fmt.Println("----------欢迎登录多人聊天系统----------")

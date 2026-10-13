@@ -1,3 +1,4 @@
+// Package utils 提供客户端的协议帧读写工具和标准输入读取工具。
 package utils
 
 import (
@@ -25,6 +26,7 @@ const connWriteTimeout = 5 * time.Second
 // 帧头+帧体必须持锁连续写出，否则字节交错导致对端帧失步。
 var writeMu sync.Mutex
 
+// Transfer 协议帧读写器：按“4 字节大端长度 + JSON 包体”的格式收发消息。
 type Transfer struct {
 	Conn net.Conn
 	Buf  [8096]byte

@@ -9,16 +9,13 @@ import (
 	"github.com/VKGQQ/goproject_1/chat/server/model"
 )
 
+// SmsProcess 消息转发处理器：负责群聊与私聊的路由和投递。
 type SmsProcess struct {
 }
 
 // SendGroupMes 群发消息。senderId 是服务端登录会话确认的权威发送者身份：
 // 强制覆盖客户端上报的 UserId，防止伪造他人发言。
 func (this *SmsProcess) SendGroupMes(mes *message.Message, senderId int) {
-
-	//遍历服务器端的onlineUsers map[int]*UserProcess,
-	//将消息转发取出.
-	//取出mes的内容 SmsMes
 	var smsMes message.SmsMes
 	err := json.Unmarshal([]byte(mes.Data), &smsMes)
 	if err != nil {
@@ -42,7 +39,7 @@ func (this *SmsProcess) SendGroupMes(mes *message.Message, senderId int) {
 
 	// 基于快照在锁外遍历转发，避免持读锁做网络 IO
 	for id, up := range userMgr.GetAllOnlineUsers() {
-		//这里，还需要过滤到自己,即不要再发给自己（senderId 不可伪造）
+		// 跳过发送者本人，不回投
 		if id == senderId {
 			continue
 		}

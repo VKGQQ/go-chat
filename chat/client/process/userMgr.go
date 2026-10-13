@@ -15,8 +15,11 @@ var (
 	onlineUsers = make(map[int]*message.User, 20)
 	onlineMu    sync.RWMutex
 )
+
+// CurUser 当前登录用户的会话，登录成功后由 UserProcess.Login 填充。
 var CurUser model.CurUser
 
+// outputOnlineUser 打印当前在线用户列表（菜单“显示在线用户列表”）。
 func outputOnlineUser() {
 	onlineMu.RLock()
 	defer onlineMu.RUnlock()
@@ -37,6 +40,8 @@ func addOnlineUser(userId int) {
 	}
 }
 
+// updateUserStatus 根据服务端广播更新本地在线列表（写锁）：
+// 下线直接删除表项，上线则新增或更新状态。
 func updateUserStatus(notifyUserStatusMes *message.NotifyUserStatusMes) {
 	onlineMu.Lock()
 	defer onlineMu.Unlock()

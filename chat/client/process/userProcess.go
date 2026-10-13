@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/VKGQQ/goproject_1/chat/client/utils"
 	"github.com/VKGQQ/goproject_1/chat/common/message"
@@ -12,8 +13,16 @@ import (
 type UserProcess struct{}
 
 // serverAddr 服务器地址。0.0.0.0 只能用于监听，客户端拨号必须填具体地址；
-// 提取为常量，Login/Register 共用，部署时改服务器 IP 只需动这一处。
-const serverAddr = "127.0.0.1:8889"
+// 默认本地地址，部署时通过 CHAT_SERVER_ADDR 环境变量覆盖，无需改代码重新编译
+var serverAddr = getEnv("CHAT_SERVER_ADDR", "127.0.0.1:8889")
+
+// getEnv 读取环境变量，未设置时回退到默认值
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
 
 func (this *UserProcess) Login(userId int, userPwd string) (err error) {
 	conn, err := net.Dial("tcp", serverAddr)

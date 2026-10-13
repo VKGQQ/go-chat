@@ -32,11 +32,25 @@ func initUserDao() {
 	model.MyOfflineDao = model.NewOfflineDao(redisClient)
 }
 
+// getEnv 读取环境变量，未设置时回退到默认值。
+// 默认值保住本地 go run 的开发体验，部署时用环境变量覆盖即可，
+// 避免把生产地址/密码这类敏感配置硬编码进代码和 git 历史
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 func main() {
-	if err := initRedis("127.0.0.1:6379", "", 0, 20); err != nil {
+	redisAddr := getEnv("REDIS_ADDR", "127.0.0.1:6379")
+	redisPwd := getEnv("REDIS_PASSWORD", "")
+	if err := initRedis(redisAddr, redisPwd, 0, 20); err != nil {
 		fmt.Println("启动失败:", err)
 		os.Exit(1)
 	}
+	// 启动时打印生效配置（密码打码）："连错环境"是部署排查中最高频的问题
+	fmt.Printf("Redis 连接配置: addr=%s password=***\n", redisAddr)
 	initUserDao()
 	fmt.Println("服务器在8889端口监听")
 	listen, err := net.Listen("tcp", "0.0.0.0:8889")
